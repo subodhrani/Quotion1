@@ -53,7 +53,7 @@
       if (existing && existing.dataset.loaded === '1') return resolve();
       if (existing) existing.remove();
       var el = document.createElement('script');
-      el.src = src + '?v=3';
+      el.src = src + '?v=4';
       el.dataset.src = src;
       el.onload = function () { el.dataset.loaded = '1'; resolve(); };
       el.onerror = function () {
@@ -362,9 +362,25 @@
       warnings.push('Items table nahi mila.');
     }
 
+    // --- GST (totals area: "IGST (18%)" ya "CGST (9%)" + "SGST (9%)") ---
+    var gst = null;
+    if (headerLine && itemsCountLine && tableEnd !== null) {
+      gst = { rate: 0, mode: 'igst' };
+      lines.forEach(function (ln) {
+        if (ln.y < itemsCountLine.y - 1 || ln.y > tableEnd) return;
+        var t = joinItems(ln.items);
+        var m = /\b(IGST|CGST|SGST|GST)\b[^0-9]{0,12}(\d+(?:\.\d+)?)\s*%/i.exec(t);
+        if (!m) return;
+        var kind = m[1].toUpperCase();
+        var r = parseFloat(m[2]);
+        if (kind === 'CGST') { gst.mode = 'split'; gst.rate = r * 2; }
+        else if (kind === 'IGST' || kind === 'GST') { if (gst.mode !== 'split') { gst.rate = r; } }
+      });
+    }
+
     if (!labels.length) warnings.push('Koi known field label nahi mila.');
 
-    return { fields: fields, columns: columns, rows: rows, warnings: warnings };
+    return { fields: fields, columns: columns, rows: rows, gst: gst, warnings: warnings };
   }
 
   window.parseQuotationPdf = async function (arrayBuffer, progress) {
