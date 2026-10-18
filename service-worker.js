@@ -1,5 +1,5 @@
 // Version badalne par purana cache apne aap hat jata hai.
-const CACHE_NAME = 'quotation-ui-v4';
+const CACHE_NAME = 'quotation-ui-v5';
 const urlsToCache = [
   './',
   './index.html',
