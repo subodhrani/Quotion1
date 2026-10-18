@@ -1,0 +1,842 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quotation UI</title>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#059669" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Quotation UI" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <style>
+    :root{
+      --bg:#f6f8fb;
+      --card:#ffffff;
+      --line:#d9e0ea;
+      --text:#1f2937;
+      --muted:#6b7280;
+      --danger:#dc2626;
+      --success:#059669;
+      --head:#eef4ff;
+      --soft:#eef2f7;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Arial, Helvetica, sans-serif;background:var(--bg);color:var(--text)}
+    .app{max-width:1400px;margin:24px auto;padding:16px}
+    button{border:none;cursor:pointer;font-size:14px;font-weight:600}
+    .pill-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:12px}
+    .pill-group{display:inline-flex;align-items:center;gap:8px;background:var(--soft);border:1px solid var(--line);border-radius:999px;padding:6px 10px}
+    .pill-label{font-size:13px;color:var(--muted);font-weight:600}
+    .pill-btn{height:30px;min-width:30px;padding:0 10px;display:inline-flex;align-items:center;justify-content:center;border-radius:999px;font-size:16px;font-weight:700;line-height:1;background:#fff;color:#111827;border:1px solid var(--line)}
+    .pill-btn-danger{background:var(--danger);color:#fff;border-color:var(--danger)}
+    .pill-btn-success{height:32px;padding:0 14px;gap:8px;background:var(--success);color:#fff;border:1px solid var(--success)}
+    .pill-btn-load{height:32px;padding:0 14px;gap:8px;font-size:14px;background:#fff;border:1px solid var(--success);color:var(--success)}
+    .pill-btn-reset{height:32px;padding:0 14px;gap:8px;font-size:14px}
+    .toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%) translateY(20px);max-width:92vw;background:#111827;color:#fff;padding:10px 16px;border-radius:10px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:50;white-space:pre-line}
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    .toast.error{background:var(--danger)}
+    tr.row-warn td{background:#fef9c3}
+    .btn-icon{font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:0 2px 10px rgba(0,0,0,.04);overflow:hidden}
+    .section{padding:16px;border-bottom:1px solid var(--line)}
+    .section:last-child{border-bottom:none}
+    .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:12px}
+    .col-12{grid-column:span 12}
+    .col-6{grid-column:span 6}
+    .col-4{grid-column:span 4}
+    .col-3{grid-column:span 3}
+    h1,p{margin:0}
+    .main-title{text-align:center;font-size:30px;letter-spacing:1px;margin-bottom:10px}
+    label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:700;text-transform:uppercase}
+    input, textarea{
+      width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font-size:14px;background:#fff
+    }
+    textarea{min-height:84px;resize:vertical}
+    .field-wrap{position:relative}
+    .print-textarea{display:none}
+    .table-wrap{
+      overflow:auto;
+      border:1px solid var(--line);
+      border-radius:12px;
+      -webkit-overflow-scrolling:touch;
+    }
+    table{
+      width:100%;
+      border-collapse:collapse;
+      min-width:1000px;
+      background:#fff;
+      table-layout:fixed;
+    }
+    th, td{border:1px solid var(--line);padding:8px;vertical-align:top;text-align:left;overflow:hidden}
+    th{background:var(--head);font-size:13px;position:relative}
+    th .th-inner{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-right:10px}
+    .th-title{display:flex;align-items:center;gap:8px;min-width:0;flex:1}
+    .th-title input{min-width:0}
+    .resize-handle{position:absolute;top:0;right:0;width:8px;height:100%;cursor:col-resize;user-select:none;background:transparent;touch-action:none}
+    .resize-handle:hover{background:#c7d2fe}
+    .row-resize-handle{position:absolute;left:0;bottom:0;width:100%;height:8px;cursor:row-resize;user-select:none;background:transparent;touch-action:none}
+    @media (pointer:coarse){.resize-handle{width:18px}.row-resize-handle{height:16px}}
+    .row-resize-handle:hover{background:#bfdbfe}
+    td{position:relative}
+    td input{border:none;padding:8px;border-radius:6px;background:transparent;height:100%}
+    td input:focus{outline:1px solid #93c5fd;background:#f8fbff}
+    .print-value{display:none}
+    .meta-row{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-top:12px;flex-wrap:wrap}
+    .total-box{min-width:260px;margin-left:auto;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+    .total-box div{display:flex;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--line)}
+    .total-box div:last-child{border-bottom:none}
+    .total-box .grand{background:#eff6ff;font-size:18px;font-weight:700}
+    .muted{color:var(--muted)}
+
+    @media (max-width:900px){
+      .app{margin:0;padding:10px}
+      .section{padding:12px}
+      .main-title{font-size:24px}
+      .col-6,.col-4,.col-3{grid-column:span 12}
+      .pill-toolbar{flex-direction:column;align-items:stretch}
+      .pill-group{width:100%;justify-content:space-between;border-radius:12px}
+      .pill-btn-success,.pill-btn-load,.pill-btn-reset{width:100%;justify-content:center;border-radius:12px}
+      .pill-btn{min-width:40px}
+      input, textarea{font-size:16px}
+      .table-wrap{border-radius:10px}
+      table{min-width:820px}
+      th, td{padding:6px}
+      .total-box{width:100%;min-width:0}
+      .meta-row{flex-direction:column;align-items:stretch}
+    }
+
+    @media (max-width:600px){
+      .app{padding:8px}
+      .section{padding:10px}
+      .main-title{font-size:22px}
+      label{font-size:11px}
+      input, textarea{font-size:16px;padding:10px}
+      table{min-width:760px}
+      th{font-size:12px}
+      th, td{padding:5px}
+      .pill-label{font-size:12px}
+    }
+
+    @media print{
+      body{background:#fff;font-size:11px}
+      .app{max-width:none;margin:0;padding:0}
+      .pill-toolbar,.toast,.no-print,.col-actions,.remove-col-btn,.row-remove-btn,.resize-handle,.row-resize-handle{display:none !important}
+      .card{border:none;box-shadow:none;border-radius:0;overflow:visible !important}
+      .section{padding:8px 10px;overflow:visible !important;page-break-inside:auto}
+      label{margin-bottom:4px}
+      input,textarea{
+        border:none !important;padding:0 !important;border-radius:0 !important;background:transparent !important;
+        color:#000;font-size:11px !important;line-height:1.3 !important;white-space:pre-wrap !important;
+        overflow:visible !important;height:auto !important;min-height:0 !important
+      }
+      .field-wrap textarea,
+      .field-wrap > input{
+        display:none !important;
+      }
+      .print-textarea{
+        display:block !important;
+        white-space:pre-wrap !important;
+        word-break:break-word !important;
+        overflow-wrap:anywhere !important;
+        line-height:1.3 !important;
+        font-size:11px !important;
+        color:#000 !important;
+      }
+      .table-wrap{overflow:visible !important;border:1px solid #d9e0ea;border-radius:0}
+      table{width:100% !important;min-width:0 !important;table-layout:fixed !important;page-break-inside:auto}
+      thead{display:table-header-group}
+      tbody{display:table-row-group}
+      tr{page-break-inside:avoid;break-inside:avoid;height:auto !important}
+      th,td{
+        font-size:10px !important;padding:5px !important;white-space:normal !important;word-break:break-word !important;
+        overflow-wrap:anywhere !important;overflow:visible !important;height:auto !important
+      }
+      td .cell-input{display:none !important}
+      td .print-value{
+        display:block !important;
+        white-space:normal !important;
+        word-break:break-word !important;
+        overflow-wrap:anywhere !important;
+        line-height:1.25 !important;
+      }
+      .main-title{font-size:22px}
+      .meta-row{margin-top:8px}
+      .total-box{min-width:220px}
+      @page{size:A4 portrait;margin:10mm}
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="card" id="quotationSheet">
+      <div class="section">
+        <h1 class="main-title">QUOTATION</h1>
+
+        <div class="grid">
+          <div class="col-6">
+            <label>From Address</label>
+            <div class="field-wrap">
+              <textarea id="fromAddress" oninput="syncFieldPrint('fromAddress')">RUPAM AUTOTECH
+E44, Ist Floor, Shyam Hotel Wali Gali, Sanjay Colony, Sector-24 Ballabhgarh Haryana: 121004
+E-mail: nirbhayyadav0080@gmail.com</textarea>
+              <div class="print-textarea" id="fromAddress_print">RUPAM AUTOTECH
+E44, Ist Floor, Shyam Hotel Wali Gali, Sanjay Colony, Sector-24 Ballabhgarh Haryana: 121004
+E-mail: nirbhayyadav0080@gmail.com</div>
+            </div>
+          </div>
+
+          <div class="col-6">
+            <label>Invoice To</label>
+            <div class="field-wrap">
+              <textarea id="invoiceTo" oninput="syncFieldPrint('invoiceTo')">M/S Alok Glass Works
+Agra Rd, Firozabad, Uttar Pradesh 283203</textarea>
+              <div class="print-textarea" id="invoiceTo_print">M/S Alok Glass Works
+Agra Rd, Firozabad, Uttar Pradesh 283203</div>
+            </div>
+          </div>
+
+          <div class="col-6">
+            <label>Other Details</label>
+            <div class="field-wrap">
+              <textarea id="otherDetails" oninput="syncFieldPrint('otherDetails')">PO NO: -
+DATE: 06/07/2026
+GST NO:
+PAN NO:</textarea>
+              <div class="print-textarea" id="otherDetails_print">PO NO: -
+DATE: 06/07/2026
+GST NO:
+PAN NO:</div>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <label>Intro Text</label>
+            <div class="field-wrap">
+              <textarea id="introText" oninput="syncFieldPrint('introText')">We are pleased to place our order with you for the following items, as per the terms and conditions mentioned, and subject to the instructions specified below.</textarea>
+              <div class="print-textarea" id="introText_print">We are pleased to place our order with you for the following items, as per the terms and conditions mentioned, and subject to the instructions specified below.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="pill-toolbar no-print">
+          <div class="pill-group">
+            <span class="pill-label">Row</span>
+            <button class="pill-btn" onclick="addRow()">+</button>
+          </div>
+          <div class="pill-group">
+            <span class="pill-label">Column</span>
+            <button class="pill-btn" onclick="addColumn()">+</button>
+          </div>
+          <button class="pill-btn pill-btn-load" onclick="document.getElementById('pdfFileInput').click()">
+            <span class="btn-icon">📂</span>
+            <span>Load PDF</span>
+          </button>
+          <button class="pill-btn pill-btn-reset" onclick="resetAll()">
+            <span class="btn-icon">🗑️</span>
+            <span>New</span>
+          </button>
+          <input type="file" id="pdfFileInput" accept="application/pdf,.pdf" hidden onchange="handlePdfFile(this)" />
+          <button class="pill-btn pill-btn-success" onclick="getQuotation()">
+            <span class="btn-icon">📄</span>
+            <span>Get Quotation</span>
+          </button>
+        </div>
+
+        <div class="table-wrap">
+          <table id="itemsTable">
+            <colgroup id="colGroup"></colgroup>
+            <thead>
+              <tr id="headerRow"></tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </div>
+
+        <div class="meta-row">
+          <div class="no-print">
+            <span class="muted">Tip: mobile me table sideways scroll karega aur PDF print safe hai. Quantity × Rate se Value auto bharta hai.</span>
+          </div>
+          <div class="total-box">
+            <div><span>Items Count</span><strong id="itemsCount">0</strong></div>
+            <div class="grand"><span>TOTAL</span><strong id="grandTotal">0.00</strong></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="grid">
+          <div class="col-3">
+            <label>F.O.R.</label>
+            <div class="field-wrap">
+              <input id="forValue" value="OUR FACTORY" oninput="syncFieldPrint('forValue')" />
+              <div class="print-textarea" id="forValue_print">OUR FACTORY</div>
+            </div>
+          </div>
+          <div class="col-3">
+            <label>CGST</label>
+            <div class="field-wrap">
+              <input id="cgstValue" value="AS APPLICABLE" oninput="syncFieldPrint('cgstValue')" />
+              <div class="print-textarea" id="cgstValue_print">AS APPLICABLE</div>
+            </div>
+          </div>
+          <div class="col-3">
+            <label>IGST</label>
+            <div class="field-wrap">
+              <input id="igstValue" value="AS APPLICABLE" oninput="syncFieldPrint('igstValue')" />
+              <div class="print-textarea" id="igstValue_print">AS APPLICABLE</div>
+            </div>
+          </div>
+          <div class="col-3">
+            <label>Cartage / Payment</label>
+            <div class="field-wrap">
+              <input id="cartageValue" value="Nill" oninput="syncFieldPrint('cartageValue')" />
+              <div class="print-textarea" id="cartageValue_print">Nill</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="grid">
+          <div class="col-6">
+            <label>Dispatch</label>
+            <div class="field-wrap">
+              <textarea id="dispatchText" oninput="syncFieldPrint('dispatchText')">Material is to be dispatch by Rail/Road though Directly To our work on freight paid / to pay basis.
+Any Reliable Transport to Pay</textarea>
+              <div class="print-textarea" id="dispatchText_print">Material is to be dispatch by Rail/Road though Directly To our work on freight paid / to pay basis.
+Any Reliable Transport to Pay</div>
+            </div>
+          </div>
+          <div class="col-6">
+            <label>Terms Instruction</label>
+            <div class="field-wrap">
+              <textarea id="termsText" oninput="syncFieldPrint('termsText')">1. Please mention our order reference in all correspondence, Challans & Invoices etc.
+2. Rejection on account of quality, Specification Delivery will be on your a/c.
+Rejected material must be collected from our works immediately on receipt of rejection advice.
+Transit Insurance - To be covered by you/us. Please inform dispatch particulars immediately.
+Guarantee the materials against any manufacturing, workmanship, quality defect.</textarea>
+              <div class="print-textarea" id="termsText_print">1. Please mention our order reference in all correspondence, Challans & Invoices etc.
+2. Rejection on account of quality, Specification Delivery will be on your a/c.
+Rejected material must be collected from our works immediately on receipt of rejection advice.
+Transit Insurance - To be covered by you/us. Please inform dispatch particulars immediately.
+Guarantee the materials against any manufacturing, workmanship, quality defect.</div>
+            </div>
+          </div>
+          <div class="col-4">
+            <label>Prepared By</label>
+            <div class="field-wrap">
+              <input id="preparedBy" value="NIRBHAY YADAV" oninput="syncFieldPrint('preparedBy')" />
+              <div class="print-textarea" id="preparedBy_print">NIRBHAY YADAV</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast no-print" role="status" aria-live="polite"></div>
+
+  <script>
+    const MIN_COL_WIDTH = 60;
+    const MAX_COL_WIDTH = 500;
+    const DEFAULT_ROW_HEIGHT = 48;
+    const MIN_ROW_HEIGHT = 36;
+    const MAX_ROW_HEIGHT = 200;
+
+    const baseColumns = [
+      { key: 'sno', label: 'S. No', type: 'text', width: 70 },
+      { key: 'make', label: 'Make', type: 'text', width: 160 },
+      { key: 'itemName', label: 'Item Name', type: 'text', width: 300 },
+      { key: 'quantity', label: 'Quantity', type: 'number', width: 90 },
+      { key: 'units', label: 'Units', type: 'text', width: 90 },
+      { key: 'hsn', label: 'HSN/Code', type: 'text', width: 100 },
+      { key: 'rate', label: 'Rate/Kgs (RS)', type: 'number', width: 110 },
+      { key: 'value', label: 'Value (RS)', type: 'number', width: 110 }
+    ];
+
+    let columns = [...baseColumns];
+    let rows = [
+      { sno:'1', make:'Rupam Auto Tech', itemName:'BT40 ER-32 Adapter Tool', quantity:'1', units:'', hsn:'8707', rate:'1800', value:'1800', _height: DEFAULT_ROW_HEIGHT },
+      { sno:'2', make:'Rupam Auto Tech', itemName:'BT40 ER-25 Adapter Tool', quantity:'1', units:'', hsn:'8707', rate:'1800', value:'1800', _height: DEFAULT_ROW_HEIGHT },
+      { sno:'3', make:'Rupam Auto Tech', itemName:'BT40 ER-20 Adapter Tool', quantity:'1', units:'', hsn:'8707', rate:'1800', value:'1800', _height: DEFAULT_ROW_HEIGHT },
+      { sno:'4', make:'Rupam Auto Tech', itemName:'BT40 ER-16 Adapter Tool', quantity:'1', units:'', hsn:'8707', rate:'1800', value:'1800', _height: DEFAULT_ROW_HEIGHT },
+      { sno:'5', make:'Taiwan', itemName:'Face Mil Cutter 63 Dia ONMU 060204', quantity:'1', units:'', hsn:'8707', rate:'6000', value:'6000', _height: DEFAULT_ROW_HEIGHT }
+    ];
+
+    let customColumnCount = 0;
+
+    function clamp(value, min, max){
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function safeNum(v){
+      const n = parseFloat(String(v).replace(/,/g, ''));
+      return isNaN(n) ? 0 : n;
+    }
+
+    function getValueColumnKey(){
+      const found = columns.find(col => String(col.key).trim().toLowerCase() === 'value');
+      return found ? found.key : 'value';
+    }
+
+    function syncFieldPrint(id){
+      const src = document.getElementById(id);
+      const target = document.getElementById(id + '_print');
+      if(src && target) target.textContent = src.value;
+    }
+
+    function renderColGroup(){
+      const colGroup = document.getElementById('colGroup');
+      colGroup.innerHTML = '';
+      columns.forEach(col => {
+        const colEl = document.createElement('col');
+        colEl.style.width = (col.width || 120) + 'px';
+        colGroup.appendChild(colEl);
+      });
+      const actionCol = document.createElement('col');
+      actionCol.style.width = '60px';
+      colGroup.appendChild(actionCol);
+    }
+
+    function renderTable(){
+      renderColGroup();
+
+      const headerRow = document.getElementById('headerRow');
+      const tbody = document.getElementById('tableBody');
+      headerRow.innerHTML = '';
+      tbody.innerHTML = '';
+
+      columns.forEach((col, idx) => {
+        const th = document.createElement('th');
+        const removable = !baseColumns.find(b => b.key === col.key);
+        th.innerHTML = `
+          <div class="th-inner">
+            <div class="th-title">
+              <input value="${escapeHtml(col.label)}" onchange="renameColumn(${idx}, this.value)" />
+              ${removable ? `<button class="pill-btn pill-btn-danger remove-col-btn no-print" onclick="removeColumnByIndex(${idx})">−</button>` : ''}
+            </div>
+          </div>
+          <div class="resize-handle no-print" onpointerdown="startResize(event, ${idx})" ondblclick="autoFitColumn(${idx})"></div>
+        `;
+        headerRow.appendChild(th);
+      });
+
+      const actionTh = document.createElement('th');
+      actionTh.className = 'col-actions no-print';
+      actionTh.textContent = '';
+      headerRow.appendChild(actionTh);
+
+      rows.forEach((row, rowIndex) => {
+        const tr = document.createElement('tr');
+        tr.style.height = (row._height || DEFAULT_ROW_HEIGHT) + 'px';
+
+        columns.forEach(col => {
+          const td = document.createElement('td');
+          const value = row[col.key] ?? '';
+          td.innerHTML = `
+            <input
+              class="cell-input"
+              type="${col.type === 'number' ? 'number' : 'text'}"
+              value="${escapeAttr(value)}"
+              oninput="updateCell(${rowIndex}, '${col.key}', this.value)"
+            />
+            <div class="print-value">${escapeHtml(value)}</div>
+            <div class="row-resize-handle no-print" onpointerdown="startRowResize(event, ${rowIndex})"></div>
+          `;
+          tr.appendChild(td);
+        });
+
+        const actionTd = document.createElement('td');
+        actionTd.className = 'no-print';
+        actionTd.innerHTML = `
+          <button class="pill-btn pill-btn-danger row-remove-btn" onclick="removeRow(${rowIndex})">−</button>
+          <div class="row-resize-handle no-print" onpointerdown="startRowResize(event, ${rowIndex})"></div>
+        `;
+        tr.appendChild(actionTd);
+
+        tbody.appendChild(tr);
+      });
+
+      updateTotals();
+    }
+
+    function updateCell(rowIndex, key, value){
+      rows[rowIndex][key] = value;
+      syncPrintValue(rowIndex, key, value);
+
+      // Quantity ya Rate badalne par Value = Quantity x Rate
+      if(key === 'quantity' || key === 'rate'){
+        const q = String(rows[rowIndex].quantity ?? '').trim();
+        const r = String(rows[rowIndex].rate ?? '').trim();
+        const valueKey = getValueColumnKey();
+        if(q !== '' && r !== ''){
+          const v = String(+(safeNum(q) * safeNum(r)).toFixed(2));
+          rows[rowIndex][valueKey] = v;
+          const colIdx = columns.findIndex(c => c.key === valueKey);
+          const rowEl = document.querySelectorAll('#tableBody tr')[rowIndex];
+          const cell = rowEl && rowEl.children[colIdx];
+          const inp = cell && cell.querySelector('.cell-input');
+          if(inp) inp.value = v;
+          syncPrintValue(rowIndex, valueKey, v);
+        }
+      }
+      updateTotals();
+      saveState();
+    }
+
+    function syncPrintValue(rowIndex, key, value){
+      const rowEl = document.querySelectorAll('#tableBody tr')[rowIndex];
+      if(!rowEl) return;
+      const colIndex = columns.findIndex(c => c.key === key);
+      if(colIndex === -1) return;
+      const cell = rowEl.children[colIndex];
+      if(!cell) return;
+      const printValue = cell.querySelector('.print-value');
+      if(printValue) printValue.textContent = value;
+    }
+
+    function updateTotals(){
+      const valueKey = getValueColumnKey();
+      const total = rows.reduce((sum, row) => sum + safeNum(row[valueKey]), 0);
+      document.getElementById('grandTotal').textContent = total.toFixed(2);
+      document.getElementById('itemsCount').textContent = rows.length;
+    }
+
+    function addRow(){
+      const newRow = { _height: DEFAULT_ROW_HEIGHT };
+      columns.forEach(col => {
+        newRow[col.key] = '';
+      });
+      rows.push(newRow);
+      renderTable();
+      saveState();
+    }
+
+    function removeRow(index){
+      rows.splice(index, 1);
+      renderTable();
+      saveState();
+    }
+
+    function addColumn(){
+      customColumnCount++;
+      const key = 'custom_' + customColumnCount;
+      columns.push({
+        key,
+        label: 'Custom Column ' + customColumnCount,
+        type: 'text',
+        width: 120
+      });
+      rows = rows.map(r => ({ ...r, [key]: '' }));
+      renderTable();
+      saveState();
+    }
+
+    function removeColumnByIndex(index){
+      const col = columns[index];
+      if(!col) return;
+      if(baseColumns.find(b => b.key === col.key)) return;
+      columns.splice(index, 1);
+      rows = rows.map(r => {
+        delete r[col.key];
+        return r;
+      });
+      renderTable();
+      saveState();
+    }
+
+    function renameColumn(index, value){
+      columns[index].label = value || columns[index].label;
+      saveState();
+    }
+
+    function getQuotation(){
+      updateTotals();
+      ['fromAddress','invoiceTo','otherDetails','introText','forValue','cgstValue','igstValue','cartageValue','dispatchText','termsText','preparedBy']
+        .forEach(syncFieldPrint);
+      window.print();
+    }
+
+    function escapeHtml(str){
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function escapeAttr(str){
+      return escapeHtml(str);
+    }
+
+    let resizingColIndex = null;
+    let startX = 0;
+    let startWidth = 0;
+
+    function startResize(e, colIndex){
+      e.preventDefault();
+      resizingColIndex = colIndex;
+      startX = e.clientX;
+      startWidth = columns[colIndex].width || 120;
+      document.addEventListener('pointermove', onResizeMove);
+      document.addEventListener('pointerup', stopResize);
+      document.addEventListener('pointercancel', stopResize);
+    }
+
+    function onResizeMove(e){
+      if(resizingColIndex === null) return;
+      const diff = e.clientX - startX;
+      const newWidth = clamp(startWidth + diff, MIN_COL_WIDTH, MAX_COL_WIDTH);
+      columns[resizingColIndex].width = newWidth;
+      renderColGroup();
+    }
+
+    function stopResize(){
+      document.removeEventListener('pointermove', onResizeMove);
+      document.removeEventListener('pointerup', stopResize);
+      document.removeEventListener('pointercancel', stopResize);
+      resizingColIndex = null;
+      saveState();
+    }
+
+    function autoFitColumn(colIndex){
+      const col = columns[colIndex];
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      ctx.font = '14px Arial';
+
+      let maxWidth = measureTextWidth(ctx, col.label) + 40;
+
+      rows.forEach((row) => {
+        const text = String(row[col.key] ?? '');
+        maxWidth = Math.max(maxWidth, measureTextWidth(ctx, text) + 40);
+      });
+
+      columns[colIndex].width = clamp(maxWidth, MIN_COL_WIDTH, MAX_COL_WIDTH);
+      renderColGroup();
+      saveState();
+    }
+
+    function measureTextWidth(ctx, text){
+      return ctx.measureText(text).width;
+    }
+
+    let resizingRowIndex = null;
+    let startY = 0;
+    let startHeight = 0;
+
+    function startRowResize(e, rowIndex){
+      e.preventDefault();
+      e.stopPropagation();
+      resizingRowIndex = rowIndex;
+      startY = e.clientY;
+      startHeight = rows[rowIndex]._height || DEFAULT_ROW_HEIGHT;
+      document.addEventListener('pointermove', onRowResizeMove);
+      document.addEventListener('pointerup', stopRowResize);
+      document.addEventListener('pointercancel', stopRowResize);
+    }
+
+    function onRowResizeMove(e){
+      if(resizingRowIndex === null) return;
+      const diff = e.clientY - startY;
+      const newHeight = clamp(startHeight + diff, MIN_ROW_HEIGHT, MAX_ROW_HEIGHT);
+      rows[resizingRowIndex]._height = newHeight;
+      const tr = document.querySelectorAll('#tableBody tr')[resizingRowIndex];
+      if(tr) tr.style.height = newHeight + 'px';
+    }
+
+    function stopRowResize(){
+      document.removeEventListener('pointermove', onRowResizeMove);
+      document.removeEventListener('pointerup', stopRowResize);
+      document.removeEventListener('pointercancel', stopRowResize);
+      resizingRowIndex = null;
+      saveState();
+    }
+
+    // ---------- Persistence (localStorage) ----------
+    const FIELD_IDS = ['fromAddress','invoiceTo','otherDetails','introText','forValue','cgstValue','igstValue','cartageValue','dispatchText','termsText','preparedBy'];
+    const STORAGE_KEY = 'quotation-ui-state-v1';
+    let saveTimer = null;
+
+    function saveState(){
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => {
+        try{
+          const fields = {};
+          FIELD_IDS.forEach(id => { fields[id] = document.getElementById(id).value; });
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({ fields, columns, rows, customColumnCount }));
+        }catch(e){ /* storage blocked/full - ignore */ }
+      }, 250);
+    }
+
+    function applyFields(fields){
+      FIELD_IDS.forEach(id => {
+        if(fields && typeof fields[id] === 'string'){
+          document.getElementById(id).value = fields[id];
+        }
+        syncFieldPrint(id);
+      });
+    }
+
+    function loadState(){
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if(!raw) return;
+        const st = JSON.parse(raw);
+        if(Array.isArray(st.columns) && st.columns.length && Array.isArray(st.rows)){
+          columns = st.columns;
+          rows = st.rows;
+          customColumnCount = st.customColumnCount || 0;
+        }
+        applyFields(st.fields);
+      }catch(e){ /* corrupt state - ignore */ }
+    }
+
+    function resetAll(){
+      if(!confirm('Sab data hata kar nayi blank quotation shuru karein?')) return;
+      columns = baseColumns.map(c => ({ ...c }));
+      customColumnCount = 0;
+      rows = [];
+      FIELD_IDS.forEach(id => {
+        // Header/terms jaise fixed fields rakhte hain, sirf quotation-specific data clear karte hain
+        if(['invoiceTo','otherDetails'].includes(id)) document.getElementById(id).value = '';
+      });
+      applyFields(null);
+      addRow();
+      saveState();
+      showToast('Nayi quotation tayyar.');
+    }
+
+    document.addEventListener('input', e => {
+      if(e.target && FIELD_IDS.includes(e.target.id)) saveState();
+    });
+
+    // ---------- Toast ----------
+    let toastTimer = null;
+    function showToast(msg, isError){
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = 'toast show' + (isError ? ' error' : '');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { t.className = 'toast'; }, isError ? 6000 : 3500);
+    }
+
+    // ---------- Load data from existing PDF ----------
+    function loadScriptOnce(src){
+      return new Promise((resolve, reject) => {
+        if(document.querySelector('script[data-src="' + src + '"]')) return resolve();
+        const s = document.createElement('script');
+        s.src = src;
+        s.dataset.src = src;
+        s.onload = resolve;
+        s.onerror = () => reject(new Error('Script load nahi hui: ' + src));
+        document.head.appendChild(s);
+      });
+    }
+
+    function applyParsedQuotation(res){
+      applyFields(res.fields);
+
+      if(res.columns.length && res.rows.length){
+        const used = new Set();
+        const newCols = [];
+        let custom = 0;
+        const colMap = res.columns.map(pc => {
+          let key = pc.key;
+          if(!key || used.has(key)){
+            custom++;
+            key = 'custom_' + custom;
+            newCols.push({ key, label: pc.label || ('Custom Column ' + custom), type: 'text', width: 120 });
+          }else{
+            const base = baseColumns.find(b => b.key === key);
+            newCols.push({ ...base });
+          }
+          used.add(key);
+          return key;
+        });
+        baseColumns.forEach(b => { if(!used.has(b.key)) newCols.push({ ...b }); });
+
+        columns = newCols;
+        customColumnCount = custom;
+        rows = res.rows.map(cells => {
+          const row = { _height: DEFAULT_ROW_HEIGHT };
+          columns.forEach(c => { row[c.key] = ''; });
+          cells.forEach((text, i) => {
+            const key = colMap[i];
+            const col = columns.find(c => c.key === key);
+            row[key] = col.type === 'number' ? String(text).replace(/[^0-9.\-]/g, '') : text;
+          });
+          return row;
+        });
+      }
+      renderTable();
+      saveState();
+    }
+
+    // Jin rows me Quantity x Rate != Value hai unhe highlight karta hai (OCR galti pakadne ke liye)
+    function flagMismatchedRows(){
+      const valueKey = getValueColumnKey();
+      const bad = [];
+      document.querySelectorAll('#tableBody tr').forEach((tr, i) => {
+        const r = rows[i];
+        const q = String(r.quantity ?? '').trim(), rt = String(r.rate ?? '').trim(), v = String(r[valueKey] ?? '').trim();
+        const mismatch = q !== '' && rt !== '' && Math.abs(safeNum(q) * safeNum(rt) - safeNum(v)) > 0.01;
+        tr.classList.toggle('row-warn', mismatch);
+        if(mismatch) bad.push(r.sno || (i + 1));
+      });
+      return bad;
+    }
+
+    async function handlePdfFile(input){
+      const file = input.files && input.files[0];
+      input.value = '';
+      if(!file) return;
+      if(rows.some(r => Object.keys(r).some(k => k !== '_height' && String(r[k]).trim() !== '')) &&
+         !confirm('Current data PDF ke data se replace ho jayega. Continue?')) return;
+      showToast('PDF padh raha hoon…');
+      try{
+        await loadScriptOnce('./pdf.min.js');
+        await loadScriptOnce('./pdf-import.js');
+        const buffer = await file.arrayBuffer();
+        let ocrPage = '';
+        const res = await window.parseQuotationPdf(buffer, (frac, page, total) => {
+          if(page) ocrPage = page + '/' + total;
+          showToast('PDF me text nahi tha, OCR chal raha hai… page ' + ocrPage + ' ' + Math.round((frac || 0) * 100) + '%\n(pehli baar thoda time lag sakta hai)');
+        });
+        if(!Object.keys(res.fields).length && !res.rows.length){
+          throw new Error('Is PDF me quotation ka format nahi mila.');
+        }
+        applyParsedQuotation(res);
+        let msg = 'PDF load ho gayi: ' + res.rows.length + ' item row(s).';
+        if(res.warnings.length) msg += '\n⚠ ' + res.warnings.join(' ');
+        const bad = flagMismatchedRows();
+        if(res.mode === 'ocr'){
+          msg += '\nOCR se padha gaya hai, isliye data ek baar zaroor check kar lo.';
+          if(bad.length) msg += '\n⚠ Qty × Rate ≠ Value: S.No ' + bad.slice(0, 15).join(', ') + (bad.length > 15 ? '…' : '') + ' (peele rows)';
+        }
+        showToast(msg);
+      }catch(err){
+        console.error(err);
+        showToast('PDF load nahi hui: ' + (err && err.message ? err.message : err), true);
+      }
+    }
+
+    loadState();
+    renderTable();
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./service-worker.js')
+          .then(() => console.log('Service Worker registered'))
+          .catch(err => console.log('Service Worker registration failed:', err));
+      });
+    }
+  </script>
+</body>
+</html>
