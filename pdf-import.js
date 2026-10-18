@@ -49,12 +49,17 @@
 
   function loadScriptOnce(src) {
     return new Promise(function (resolve, reject) {
-      if (document.querySelector('script[data-src="' + src + '"]')) return resolve();
+      var existing = document.querySelector('script[data-src="' + src + '"]');
+      if (existing && existing.dataset.loaded === '1') return resolve();
+      if (existing) existing.remove();
       var el = document.createElement('script');
-      el.src = src;
+      el.src = src + '?v=3';
       el.dataset.src = src;
-      el.onload = resolve;
-      el.onerror = function () { reject(new Error('Script load nahi hui: ' + src)); };
+      el.onload = function () { el.dataset.loaded = '1'; resolve(); };
+      el.onerror = function () {
+        el.remove();
+        reject(new Error('File "' + src.replace('./', '') + '" site par nahi mili. GitHub repo me upload karo.'));
+      };
       document.head.appendChild(el);
     });
   }
@@ -92,6 +97,7 @@
 
   async function ocrPages(pdf, progress) {
     await loadScriptOnce('./tesseract.min.js');
+    if (typeof Tesseract === 'undefined') throw new Error('tesseract.min.js sahi file nahi hai (repo me dobara upload karo).');
     var worker = await Tesseract.createWorker('eng', 1, {
       workerPath: abs('./tesseract-worker.min.js'),
       corePath: abs('./').replace(/\/$/, ''),

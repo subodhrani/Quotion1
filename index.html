@@ -730,12 +730,14 @@ Guarantee the materials against any manufacturing, workmanship, quality defect.<
     // ---------- Load data from existing PDF ----------
     function loadScriptOnce(src){
       return new Promise((resolve, reject) => {
-        if(document.querySelector('script[data-src="' + src + '"]')) return resolve();
+        const existing = document.querySelector('script[data-src="' + src + '"]');
+        if(existing && existing.dataset.loaded === '1') return resolve();
+        if(existing) existing.remove(); // pehle ki fail/adhuri script hata kar dobara try karo
         const s = document.createElement('script');
-        s.src = src;
+        s.src = src + '?v=3';
         s.dataset.src = src;
-        s.onload = resolve;
-        s.onerror = () => reject(new Error('Script load nahi hui: ' + src));
+        s.onload = () => { s.dataset.loaded = '1'; resolve(); };
+        s.onerror = () => { s.remove(); reject(new Error('File "' + src.replace('./','') + '" site par nahi mili. GitHub repo me us naam se upload karo.')); };
         document.head.appendChild(s);
       });
     }
@@ -802,6 +804,7 @@ Guarantee the materials against any manufacturing, workmanship, quality defect.<
       showToast('PDF padh raha hoon…');
       try{
         await loadScriptOnce('./pdf.min.js');
+        if(typeof pdfjsLib === 'undefined') throw new Error('pdf.min.js sahi file nahi hai (repo me dobara upload karo).');
         await loadScriptOnce('./pdf-import.js');
         const buffer = await file.arrayBuffer();
         let ocrPage = '';
